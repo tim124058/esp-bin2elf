@@ -8,31 +8,13 @@ from StringIO import StringIO
 from struct import pack, unpack
 
 class EspRom(object):
-    def __init__(self, rom_name, rom_bytes_stream, flash_layout):
+    def __init__(self, rom_name, rom_bytes_stream):
         self.name = rom_name
         self.sections = []
         self.contents = rom_bytes_stream.read()
         rom_bytes_stream.seek(0)
 
         self.header = EspRomHeader.get_header(rom_bytes_stream)
-        if self.header.is_new():
-            # the new header format includes .irom0.text directly after,
-            # followed by an e9 header
-            irom_address = 0x40200000
-            irom_size = self.header.length
-            irom_text_contents = rom_bytes_stream.read(irom_size)
-            self.header = EspRomE9Header(rom_bytes_stream)
-        else:
-            # read the irom0.text section from flash, non-OTA case.
-            irom_section = flash_layout['.irom0.text']
-            irom_address = 0x40200000
-            irom_size = irom_section.size * 1024
-            limit = irom_section.offset + irom_size
-            irom_text_contents = self.contents[irom_section.offset:limit]
-
-        # add .irom0.text section
-        section = EspRomSection(StringIO(irom_text_contents), irom_address, irom_size)
-        self.sections.append(section)
 
         for i in range(0, self.header.sect_count):
             section = EspRomSection(rom_bytes_stream)

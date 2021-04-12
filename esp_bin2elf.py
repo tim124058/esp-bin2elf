@@ -7,11 +7,11 @@
 
 from esp_rom import EspRom
 from esp_elf import XtensaElf, ElfSection, default_section_settings
-from esp_bootrom import get_bootrom_contents, symbols
+from esp_bootrom import get_bootrom_contents
 
-def parse_rom(rom_name, rom_filename, flash_layout):
+def parse_rom(rom_name, rom_filename):
     with open(rom_filename) as f:
-        rom = EspRom(rom_name, f, flash_layout)
+        rom = EspRom(rom_name, f)
 
     return rom
 
@@ -34,9 +34,9 @@ def name_sections(rom):
 def convert_rom_to_elf(esp_rom, addr_to_section_name_mapping, filename_to_write=None):
     elf = XtensaElf(esp_rom.name + '.elf', esp_rom.header.entry_addr)
 
-    bootrom_bytes = get_bootrom_contents()
-    bootrom_section = ElfSection('.bootrom.text', 0x40000000, bootrom_bytes)
-    elf.add_section(bootrom_section, True)
+    # bootrom_bytes = get_bootrom_contents()
+    # bootrom_section = ElfSection('.bootrom.text', 0x4010f000, bootrom_bytes)
+    # elf.add_section(bootrom_section, True)
 
     for section in esp_rom.sections:
         if section.address not in addr_to_section_name_mapping:
@@ -47,8 +47,6 @@ def convert_rom_to_elf(esp_rom, addr_to_section_name_mapping, filename_to_write=
         elf_section = ElfSection(name, section.address, section.contents)
         elf.add_section(elf_section, True)
 
-    for name, addr in symbols.iteritems():
-        elf.add_symbol(name, addr, '.bootrom.text')
 
     elf.generate_elf()
 
